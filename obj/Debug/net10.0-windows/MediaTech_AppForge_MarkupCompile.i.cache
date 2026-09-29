@@ -10,11 +10,11 @@ none
 false
 TRACE;DEBUG;NET;NET10_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NET10_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WINDOWS7_0_OR_GREATER
 D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\App.xaml
-9710924254
+14-1010054971
 
-22-796869906
+28-1932516549
 220-466360535
-MainWindow.xaml;Themes\Theme.xaml;Views\CatalogueView.xaml;Views\LoginWindow.xaml;Views\MediaDetailView.xaml;Views\MediaListView.xaml;Views\MesEmpruntsView.xaml;Views\NotificationsView.xaml;Views\PlaceholderView.xaml;
+MainWindow.xaml;Themes\Theme.xaml;Views\CatalogueView.xaml;Views\ConfirmWindow.xaml;Views\GestionMediasView.xaml;Views\GestionView.xaml;Views\LoginWindow.xaml;Views\MediaDetailView.xaml;Views\MediaEditorWindow.xaml;Views\MediaListView.xaml;Views\MesEmpruntsView.xaml;Views\NotificationsView.xaml;Views\PlaceholderView.xaml;Views\SuggestBox.xaml;
 
 False
 

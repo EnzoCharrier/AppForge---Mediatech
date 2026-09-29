@@ -229,4 +229,70 @@
             </Trigger>
         </Style.Triggers>
     </Style>
+
+    <!-- ===================== ETAPE 6 : formulaires d'administration ===================== -->
+    <Style x:Key="FieldTextBox" TargetType="TextBox">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="CaretBrush" Value="{StaticResource TextPrimary}"/>
+    </Style>
+
+    <Style x:Key="FieldLabel" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Margin" Value="0,16,0,6"/>
+    </Style>
+
+    <Style x:Key="DangerButton" TargetType="Button">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="#FFDC2626" CornerRadius="8" Padding="16,9">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#FFEF4444"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ChipCheck" TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Margin" Value="0,0,8,8"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Border x:Name="Bd" Background="{StaticResource BadgeBg}" BorderBrush="{StaticResource CardBorder}"
+                            BorderThickness="1" CornerRadius="14" Padding="12,5">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentSoftBg}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                            <Setter Property="Foreground" Value="White"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>

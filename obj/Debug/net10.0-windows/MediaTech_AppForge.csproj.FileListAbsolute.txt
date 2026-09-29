@@ -49,3 +49,16 @@ D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\ne
 D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\net10.0-windows\Views\MesEmpruntsView.g.cs
 D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\net10.0-windows\Views\NotificationsView.baml
 D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\net10.0-windows\Views\NotificationsView.g.cs
+D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\net10.0-windows\Views\ConfirmWindow.baml
+D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\net10.0-windows\Views\GestionMediasView.baml
+D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\net10.0-windows\Views\GestionView.baml
+D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\net10.0-windows\Views\SuggestBox.baml
+D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\net10.0-windows\Views\ConfirmWindow.g.cs
+D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\net10.0-windows\Views\GestionMediasView.g.cs
+D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\net10.0-windows\Views\GestionView.g.cs
+D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\net10.0-windows\Views\MediaEditorWindow.g.cs
+D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\net10.0-windows\Views\SuggestBox.g.cs
+D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\net10.0-windows\GeneratedInternalTypeHelper.g.cs
+D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\net10.0-windows\MediaTech_AppForge_MarkupCompile.lref
+D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\net10.0-windows\Views\MediaEditorWindow.baml
+D:\users\chetrit\source\repos\MediaTech_AppForge\MediaTech_AppForge\obj\Debug\net10.0-windows\MediaTech_AppForge.sourcelink.json

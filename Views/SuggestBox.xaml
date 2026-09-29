@@ -1,0 +1,10 @@
+<UserControl x:Class="MediaTech_AppForge.Views.SuggestBox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <Border Style="{StaticResource FieldBorder}">
+            <TextBox x:Name="Input" Style="{StaticResource FieldTextBox}" TextChanged="Input_TextChanged"/>
+        </Border>
+        <WrapPanel x:Name="Chips" Margin="0,8,0,0" Visibility="Collapsed"/>
+    </StackPanel>
+</UserControl>

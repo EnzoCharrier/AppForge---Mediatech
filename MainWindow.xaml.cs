@@ -59,7 +59,7 @@ namespace MediaTech_AppForge
                 nameof(NavNotifications) when guest => Locked("Notifications"),
                 nameof(NavEmprunts) => new MesEmpruntsView(),
                 nameof(NavNotifications) => new NotificationsView(),
-                nameof(NavGestion) => new PlaceholderView("Gestion des contenus", "Bientôt disponible."),
+                nameof(NavGestion) => new GestionView(),
                 _ => new PlaceholderView("Accueil", "Bientôt disponible."),
             };
         }
