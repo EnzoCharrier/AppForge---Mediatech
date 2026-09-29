@@ -1,0 +1,135 @@
+<UserControl x:Class="MediaTech_AppForge.Views.CatalogueView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="0,20,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="8*"/>
+                <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="1" Stretch="Uniform" StretchDirection="UpOnly"
+                     HorizontalAlignment="Stretch" VerticalAlignment="Top" MaxWidth="1000">
+                <StackPanel Width="632">
+
+                    <!-- EN-TETE -->
+                    <Grid Margin="0,0,0,40">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MinWidth="220"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock FontSize="13">
+                                <Run Text="Média-Tech" Foreground="{StaticResource TextMuted}"/>
+                                <Run Text=" / " Foreground="{StaticResource TextMuted}"/>
+                                <Run Text="Catalogue" Foreground="{StaticResource Accent}" FontWeight="SemiBold"/>
+                            </TextBlock>
+                            <TextBlock Text="Que souhaitez-vous emprunter ?"
+                                       Foreground="{StaticResource TextPrimary}" FontSize="24" FontWeight="Bold"
+                                       TextWrapping="Wrap" Margin="0,6,0,0"/>
+                        </StackPanel>
+
+                        <Border Grid.Column="1" VerticalAlignment="Center" Margin="16,0,0,0"
+                                Background="{StaticResource CardBg}" BorderBrush="{StaticResource CardBorder}"
+                                BorderThickness="1" CornerRadius="8" Padding="12,8" MinWidth="280">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#128269;" Foreground="{StaticResource TextMuted}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBox x:Name="RootSearch" Style="{StaticResource SearchBox}" Width="230" KeyDown="RootSearch_KeyDown"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <WrapPanel Orientation="Horizontal">
+
+                        <!-- LIVRES -->
+                        <Border Style="{StaticResource CatalogCard}" Tag="Livre" MouseLeftButtonUp="Card_Click">
+                            <Grid VerticalAlignment="Top">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="18"/>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="4"/><RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="&#128214;" FontSize="22" Foreground="{StaticResource TextPrimary}"/>
+                                    <Border Grid.Column="2" Style="{StaticResource CountBadge}">
+                                        <TextBlock x:Name="LivresCountText" Text="…" Foreground="{StaticResource TextSecondary}" FontSize="12"/>
+                                    </Border>
+                                </Grid>
+                                <TextBlock Grid.Row="2" Text="Livres" Foreground="{StaticResource TextPrimary}" FontSize="19" FontWeight="Bold"/>
+                                <TextBlock Grid.Row="4" Text="Romans, essais, bandes dessinées" Foreground="{StaticResource TextMuted}" FontSize="13" TextWrapping="Wrap"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- MAGAZINES -->
+                        <Border Style="{StaticResource CatalogCard}" Tag="Magazine" MouseLeftButtonUp="Card_Click">
+                            <Grid VerticalAlignment="Top">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="18"/>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="4"/><RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="&#128240;" FontSize="22" Foreground="{StaticResource TextPrimary}"/>
+                                    <Border Grid.Column="2" Style="{StaticResource CountBadge}">
+                                        <TextBlock x:Name="MagazinesCountText" Text="…" Foreground="{StaticResource TextSecondary}" FontSize="12"/>
+                                    </Border>
+                                </Grid>
+                                <TextBlock Grid.Row="2" Text="Magazines" Foreground="{StaticResource TextPrimary}" FontSize="19" FontWeight="Bold"/>
+                                <TextBlock Grid.Row="4" Text="Presse et périodiques" Foreground="{StaticResource TextMuted}" FontSize="13" TextWrapping="Wrap"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- DVD -->
+                        <Border Style="{StaticResource CatalogCard}" Tag="DVD" MouseLeftButtonUp="Card_Click">
+                            <Grid VerticalAlignment="Top">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="18"/>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="4"/><RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="&#127909;" FontSize="22" Foreground="{StaticResource TextPrimary}"/>
+                                    <Border Grid.Column="2" Style="{StaticResource CountBadge}">
+                                        <TextBlock x:Name="DvdCountText" Text="…" Foreground="{StaticResource TextSecondary}" FontSize="12"/>
+                                    </Border>
+                                </Grid>
+                                <TextBlock Grid.Row="2" Text="DVD" Foreground="{StaticResource TextPrimary}" FontSize="19" FontWeight="Bold"/>
+                                <TextBlock Grid.Row="4" Text="Films et documentaires" Foreground="{StaticResource TextMuted}" FontSize="13" TextWrapping="Wrap"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- CD -->
+                        <Border Style="{StaticResource CatalogCard}" Tag="CD" MouseLeftButtonUp="Card_Click">
+                            <Grid VerticalAlignment="Top">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="18"/>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="4"/><RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="&#128191;" FontSize="22" Foreground="{StaticResource TextPrimary}"/>
+                                    <Border Grid.Column="2" Style="{StaticResource CountBadge}">
+                                        <TextBlock x:Name="CdCountText" Text="…" Foreground="{StaticResource TextSecondary}" FontSize="12"/>
+                                    </Border>
+                                </Grid>
+                                <TextBlock Grid.Row="2" Text="CD" Foreground="{StaticResource TextPrimary}" FontSize="19" FontWeight="Bold"/>
+                                <TextBlock Grid.Row="4" Text="Musique et livres audio" Foreground="{StaticResource TextMuted}" FontSize="13" TextWrapping="Wrap"/>
+                            </Grid>
+                        </Border>
+
+                    </WrapPanel>
+                </StackPanel>
+            </Viewbox>
+        </Grid>
+    </ScrollViewer>
+</UserControl>
