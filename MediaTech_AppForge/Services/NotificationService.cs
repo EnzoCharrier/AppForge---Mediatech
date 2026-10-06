@@ -12,7 +12,7 @@ using MediaTech_AppForge.Models;
 namespace MediaTech_AppForge.Services
 {
     /// <summary>Une ligne de la page Notifications. IsRead notifie l'interface (mise à jour immédiate au clic).</summary>
-    public class NotificationRow : INotifyPropertyChanged
+    public class NotificationRow : INotifyPropertyChanged // Représente une notification telle qu'elle sera affichée dans l'interface
     {
         public int Id { get; set; }
         public string Type { get; set; } = "";
@@ -23,7 +23,7 @@ namespace MediaTech_AppForge.Services
         public int? TargetMediaId { get; set; }
         public MediaKind? Kind { get; set; }
 
-        private bool _isRead;
+        private bool _isRead; // Permet à WPF de détecter automatiquement quand la valeur change
         public bool IsRead
         {
             get => _isRead;
@@ -38,7 +38,7 @@ namespace MediaTech_AppForge.Services
         public event PropertyChangedEventHandler? PropertyChanged;
     }
 
-    public static class NotificationService
+    public static class NotificationService /// Contient toute la logique
     {
         public const string TypeNouveauMedia = "NouveauMedia";
         public const string TypeRappel = "RappelRetour";
@@ -48,27 +48,14 @@ namespace MediaTech_AppForge.Services
         public const int RappelAvantJours = 3;   // rappel envoyé à partir de J-3
         public const int GlobalesJours = 30;     // une notif globale reste visible 30 jours
 
-        private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR");
+        private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR"); // Permet d'utiliser les dates françaises
 
         /// <summary>Levé quand des notifications ont changé (pastille de la sidebar à rafraîchir).</summary>
-        /// 
-        /// 
-        /// 
-        /// 
-        /// 
-        /// 
-        /// 
-        /// A REFAIRE
-        ///.
-        ///.
-        ///.
-        ///.
-        ///.
         public static event Action? Changed;
         public static void NotifyChanged() => Changed?.Invoke();
 
         // Visible pour l'utilisateur : une globale récente, OU une notif qui lui est adressée (ligne existante).
-        private static Expression<Func<Notification, bool>> Visible(int userId, DateTime since)
+        private static Expression<Func<Notification, bool>> Visible(int userId, DateTime since) 
             => n => (n.EstGlobale && n.DateEnvoi >= since)
                     || n.Destinataires.Any(d => d.IdUtilisateur == userId);
 
@@ -90,7 +77,7 @@ namespace MediaTech_AppForge.Services
                 .CountAsync();
         }
 
-        public static async Task<List<NotificationRow>> GetForUserAsync(int userId)
+        public static async Task<List<NotificationRow>> GetForUserAsync(int userId) 
         {
             await using var db = new MediaTechContext();
             var since = DateTime.Now.AddDays(-GlobalesJours);

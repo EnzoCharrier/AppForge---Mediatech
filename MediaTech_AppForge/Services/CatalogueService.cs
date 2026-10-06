@@ -35,7 +35,6 @@ namespace MediaTech_AppForge.Services
         public string StockText => Stock > 0 ? $"{Stock} en stock" : "Épuisé";
     }
 
-    /// <summary>Les données de la fiche détail.</summary>
     public class MediaDetail
     {
         public MediaKind Kind { get; set; }
@@ -82,44 +81,46 @@ namespace MediaTech_AppForge.Services
         ///.
         ///.
         ///.
-        public static string Plural(int n, string singular, string plural)
+        public static string Plural(int n, string singular, string plural) // Verifier et adapte si le mot est au pluriel ou au singulier 
             => $"{n.ToString("N0", Fr)} {(n <= 1 ? singular : plural)}";
 
-        /// <summary>Minuscules + sans accents, pour une recherche tolérante.</summary>
-        public static string Normalize(string? s)
+        public static string Normalize(string? s) // Permet de rechercher les variantes de mot (ex: livre = LIVRE = LivRE)
         {
-            if (string.IsNullOrWhiteSpace(s)) return "";
-            var d = s.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD);
+            if (string.IsNullOrWhiteSpace(s)) return ""; // Verifie si chaine vide ou pas 
+            var d = s.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD); // Supprime espace inutile + met tout en minuscules + separe accent en caractères spéciaux(é = e + accent)
             var sb = new StringBuilder();
             foreach (var c in d)
-                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark) sb.Append(c);
+                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark) sb.Append(c); // Vérifie si le caractère est un accent
             return sb.ToString().Normalize(NormalizationForm.FormC);
         }
 
         // kind == null -> tous les types confondus
-        public static async Task<(List<MediaRow> Rows, List<GenreInfo> Genres)> LoadAsync(MediaKind? kind)
+        public static async Task<(List<MediaRow> Rows, List<GenreInfo> Genres)> LoadAsync(MediaKind? kind) // Charge les différents médias depuis la bdd
         {
-            await using var db = new MediaTechContext();
-            bool all = kind is null;
-            var rows = new List<MediaRow>();
+            await using var db = new MediaTechContext(); // connexion bdd
+            bool all = kind is null; // indique le type de média recherché 
+            var rows = new List<MediaRow>(); 
 
+            // Recupere le type de Media selon le besoin si null on recupere tout 
             if (all || kind == MediaKind.Livre)    rows.AddRange(await ProjectAsync(db.Livres, MediaKind.Livre, all));
             if (all || kind == MediaKind.Magazine) rows.AddRange(await ProjectAsync(db.Magazines, MediaKind.Magazine, all));
             if (all || kind == MediaKind.DVD)      rows.AddRange(await ProjectAsync(db.DVDs, MediaKind.DVD, all));
             if (all || kind == MediaKind.CD)       rows.AddRange(await ProjectAsync(db.CDs, MediaKind.CD, all));
 
-            rows = rows.OrderBy(r => r.Titre, StringComparer.CurrentCultureIgnoreCase).ToList();
+            rows = rows.OrderBy(r => r.Titre, StringComparer.CurrentCultureIgnoreCase).ToList(); // Trie les média par titre 
 
+            // Recupère les genres de la bdd
             var genres = await db.Genres.AsNoTracking()
                 .Select(g => new GenreInfo(g.Id, g.Libelle, g.IdGenreParent))
                 .ToListAsync();
 
-            return (rows, genres);
+            return (rows, genres); // retourne une liste de media(rows) et une liste de genre(genres)
         }
 
-        private static async Task<List<MediaRow>> ProjectAsync<T>(IQueryable<T> query, MediaKind kind, bool includeKind)
+        private static async Task<List<MediaRow>> ProjectAsync<T>(IQueryable<T> query, MediaKind kind, bool includeKind) // Tranforme les données de la base en objets 
             where T : Media
         {
+            // Demande a la bdd des champ de media
             var raw = await query.AsNoTracking().Select(m => new
             {
                 m.Id,
@@ -131,6 +132,7 @@ namespace MediaTech_AppForge.Services
                 Genres = m.Genres.Select(g => new { g.Id, g.Libelle }).ToList(),
             }).ToListAsync();
 
+            // Crée un objet MediaRow pour chaque media recupéré 
             return raw.Select(x =>
             {
                 int? annee = x.DateSortie?.Year;
@@ -140,7 +142,7 @@ namespace MediaTech_AppForge.Services
                 parts.Add(x.Editeur);
                 if (annee != null) parts.Add(annee.Value.ToString(CultureInfo.InvariantCulture));
 
-                var genresLabels = x.Genres.Select(g => g.Libelle).OrderBy(s => s).ToList();
+                var genresLabels = x.Genres.Select(g => g.Libelle).OrderBy(s => s).ToList(); // Recupère nom des genres et les tri
 
                 return new MediaRow
                 {
@@ -154,16 +156,16 @@ namespace MediaTech_AppForge.Services
                     GenreIds = x.Genres.Select(g => g.Id).ToList(),
                     GenresText = string.Join(" · ", genresLabels),
                     Subtitle = string.Join(" · ", parts),
-                    SearchText = Normalize($"{x.Titre} {x.Auteur}"),
+                    SearchText = Normalize($"{x.Titre} {x.Auteur}"), // Permet d'affiner la recherche en utilisant normalize sur le titre et le nom de l'auteur
                 };
             }).ToList();
         }
 
-        public static async Task<MediaDetail?> GetDetailAsync(MediaKind kind, int id)
+        public static async Task<MediaDetail?> GetDetailAsync(MediaKind kind, int id) // Recuperes certaines info precise sur un média 
         {
             await using var db = new MediaTechContext();
 
-            var m = await db.Medias.AsNoTracking().Where(x => x.Id == id).Select(x => new
+            var m = await db.Medias.AsNoTracking().Where(x => x.Id == id).Select(x => new // Cherche le media cherché via l'ID
             {
                 x.Titre,
                 Auteur = x.Auteur != null ? x.Auteur.Nom : null,
@@ -175,6 +177,7 @@ namespace MediaTech_AppForge.Services
 
             if (m is null) return null;
 
+            // Crée un objet MediaDetail qui contient certaines info sur le media
             var d = new MediaDetail
             {
                 Kind = kind,
@@ -183,9 +186,10 @@ namespace MediaTech_AppForge.Services
                 Stock = m.Stock,
                 Genres = m.Genres.OrderBy(s => s).ToList(),
             };
-            d.Fields.Add(new FieldRow("Éditeur", m.Editeur));
-            if (m.DateSortie is DateOnly ds) d.Fields.Add(new FieldRow("Parution", ds.ToString("d MMMM yyyy", Fr)));
+            d.Fields.Add(new FieldRow("Éditeur", m.Editeur)); // ajoute un editeur
+            if (m.DateSortie is DateOnly ds) d.Fields.Add(new FieldRow("Parution", ds.ToString("d MMMM yyyy", Fr))); // ajoute la date de parution
 
+            // regarde quelle est le type du media qu'il est en train de traiter et adapte les données qu'il recupere en consequences
             switch (kind)
             {
                 case MediaKind.Livre:
@@ -214,8 +218,8 @@ namespace MediaTech_AppForge.Services
                         .Select(x => new { x.NombreDePiste }).FirstOrDefaultAsync();
                     if (cd?.NombreDePiste is int np) d.Fields.Add(new FieldRow("Nombre de pistes", np.ToString(Fr)));
 
-                    var pistes = await db.Pistes.AsNoTracking().Where(p => p.IdMedia == id)
-                        .OrderBy(p => p.Numero)
+                    var pistes = await db.Pistes.AsNoTracking().Where(p => p.IdMedia == id) // Recuperes les pistes d'un CD 
+                        .OrderBy(p => p.Numero) // Trie les pistes 
                         .Select(p => new { p.Numero, p.Titre, p.Duree }).ToListAsync();
                     d.Pistes = pistes.Select(p => new PisteRow(
                         p.Numero?.ToString(Fr) ?? "",
