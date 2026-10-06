@@ -11,6 +11,19 @@ namespace MediaTech_AppForge
 {
     public partial class MainWindow : Window
     {
+        /// 
+        /// 
+        /// 
+        /// 
+        /// 
+        /// 
+        /// 
+        /// A RELIRE
+        ///.
+        ///.
+        ///.
+        ///.
+        ///.
         private RadioButton? _current;
         private readonly DispatcherTimer _notifTimer = new() { Interval = TimeSpan.FromSeconds(60) };
 
