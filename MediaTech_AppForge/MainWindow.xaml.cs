@@ -11,19 +11,6 @@ namespace MediaTech_AppForge
 {
     public partial class MainWindow : Window
     {
-        /// 
-        /// 
-        /// 
-        /// 
-        /// 
-        /// 
-        /// 
-        /// A RELIRE
-        ///.
-        ///.
-        ///.
-        ///.
-        ///.
         private RadioButton? _current;
         private readonly DispatcherTimer _notifTimer = new() { Interval = TimeSpan.FromSeconds(60) };
 
@@ -32,6 +19,7 @@ namespace MediaTech_AppForge
             InitializeComponent();
 
             Navigator.Handler = page => MainContent.Content = page;
+            Navigator.SectionHandler = GoToSection;
             Session.Changed += RefreshSession;
             NotificationService.Changed += OnNotificationsChanged;
 
@@ -43,12 +31,13 @@ namespace MediaTech_AppForge
             {
                 _notifTimer.Stop();
                 Navigator.Handler = null;
+                Navigator.SectionHandler = null;
                 Session.Changed -= RefreshSession;
                 NotificationService.Changed -= OnNotificationsChanged;
             };
 
             RefreshSession();
-            SelectNav(NavCatalogue);
+            SelectNav(NavAccueil);
         }
 
         // Click (et non Checked) : recliquer sur "Catalogue" depuis une liste ou une fiche revient à l'accueil du catalogue.
@@ -73,7 +62,7 @@ namespace MediaTech_AppForge
                 nameof(NavEmprunts) => new MesEmpruntsView(),
                 nameof(NavNotifications) => new NotificationsView(),
                 nameof(NavGestion) => new GestionView(),
-                _ => new PlaceholderView("Accueil", "Bientôt disponible."),
+                _ => new AccueilView(),
             };
         }
 
@@ -106,9 +95,9 @@ namespace MediaTech_AppForge
 
             if (_current == NavGestion && !Session.IsAdmin)
                 SelectNav(NavCatalogue);
-            else if (_current == NavEmprunts || _current == NavNotifications || _current == NavGestion)
+            else if (_current == NavAccueil || _current == NavEmprunts || _current == NavNotifications || _current == NavGestion)
                 ShowPage(_current); // pages dépendantes de la session : on les réévalue
-            // Catalogue / Accueil : on ne touche pas à la page affichée (fiche ouverte, recherche en cours...).
+            // Catalogue : on ne touche pas à la page affichée (fiche ouverte, recherche en cours...).
         }
 
         private void OnNotificationsChanged() => RefreshBadge(generate: false);
@@ -160,6 +149,20 @@ namespace MediaTech_AppForge
                 },
             });
             NavNotifications.Content = panel;
+        }
+
+        // Appelé par les pages (ex. "Voir tout" sur l'accueil) : change de section ET met la sidebar à jour.
+        private void GoToSection(NavTarget target)
+        {
+            var nav = target switch
+            {
+                NavTarget.Accueil => NavAccueil,
+                NavTarget.Catalogue => NavCatalogue,
+                NavTarget.Emprunts => NavEmprunts,
+                NavTarget.Notifications => NavNotifications,
+                _ => NavGestion,
+            };
+            if (nav.Visibility == Visibility.Visible) SelectNav(nav);
         }
 
         private void Login_Click(object sender, RoutedEventArgs e)

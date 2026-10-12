@@ -66,9 +66,12 @@ namespace MediaTech_AppForge.Views
             var editor = new MediaEditorWindow(id, kind) { Owner = Window.GetWindow(this) };
             if (editor.ShowDialog() != true) return;
 
-            ShowMessage(editor.Created
-                ? $"« {editor.SavedTitle} » a été ajouté au catalogue."
-                : $"« {editor.SavedTitle} » a été modifié.", true);
+            if (editor.Warning != null)
+                ShowMessage(editor.Warning, false);
+            else
+                ShowMessage(editor.Created
+                    ? $"« {editor.SavedTitle} » a été ajouté au catalogue."
+                    : $"« {editor.SavedTitle} » a été modifié.", true);
             await LoadAsync();
         }
 

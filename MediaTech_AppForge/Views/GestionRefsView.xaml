@@ -1,0 +1,82 @@
+<UserControl x:Class="MediaTech_AppForge.Views.GestionRefsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:MediaTech_AppForge.Views">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel MaxWidth="900" Margin="32,8,32,24">
+
+            <!-- FORMULAIRE : ajout ou modification -->
+            <Border Background="{StaticResource CardBg}" BorderBrush="{StaticResource CardBorder}"
+                    BorderThickness="1" CornerRadius="12" Padding="20,16" Margin="0,8,0,16">
+                <StackPanel>
+                    <TextBlock x:Name="FormTitle" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+
+                    <TextBlock x:Name="NameLabel" Style="{StaticResource FieldLabel}"/>
+                    <Border Style="{StaticResource FieldBorder}">
+                        <TextBox x:Name="NameBox" Style="{StaticResource FieldTextBox}" MaxLength="100"/>
+                    </Border>
+
+                    <StackPanel x:Name="ParentPanel" Visibility="Collapsed">
+                        <TextBlock Text="Genre parent (facultatif)" Style="{StaticResource FieldLabel}"/>
+                        <local:SuggestBox x:Name="ParentBox" MaxLength="100"/>
+                    </StackPanel>
+
+                    <TextBlock x:Name="FormError" Foreground="{StaticResource Danger}" FontSize="12"
+                               TextWrapping="Wrap" Margin="0,10,0,0" Visibility="Collapsed"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                        <Button x:Name="SaveButton" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Save_Click"/>
+                        <Button x:Name="CancelButton" Content="Annuler" Style="{StaticResource GhostButton}"
+                                Margin="10,0,0,0" Visibility="Collapsed" Click="Cancel_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <TextBlock x:Name="StatusText" Text="Chargement…" Foreground="{StaticResource TextMuted}" FontSize="14"/>
+            <TextBlock x:Name="ActionMessage" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,12" Visibility="Collapsed"/>
+            <TextBlock x:Name="EmptyText" Foreground="{StaticResource TextMuted}" FontSize="14" Visibility="Collapsed"/>
+
+            <ItemsControl x:Name="RefList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource ListCard}" Cursor="Arrow">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Nom}" FontSize="15" FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextPrimary}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding Detail}" FontSize="12" Foreground="{StaticResource TextSecondary}" Margin="0,3,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Detail}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+
+                                <Border Grid.Column="1" Style="{StaticResource CountBadge}" VerticalAlignment="Center" Margin="12,0,12,0">
+                                    <TextBlock Text="{Binding UsageText}" Foreground="{StaticResource TextSecondary}" FontSize="12"/>
+                                </Border>
+
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Content="Modifier" Style="{StaticResource GhostButton}" Margin="0,0,8,0" Click="Edit_Click"/>
+                                    <Button Content="Supprimer" Style="{StaticResource GhostButton}"
+                                            Foreground="{StaticResource Danger}" Click="Delete_Click"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

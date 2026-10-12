@@ -83,7 +83,7 @@ namespace MediaTech_AppForge.Views
             catch (Exception ex)
             {
                 Debug.WriteLine(ex);
-                ActionMessage.Text = "Impossible de marquer la notification comme lue.";
+                ActionMessage.Text = "Impossible de marquer la notification comme lue : " + ex.GetBaseException().Message;
                 ActionMessage.Visibility = Visibility.Visible;
                 return;
             }
@@ -105,7 +105,7 @@ namespace MediaTech_AppForge.Views
             catch (Exception ex)
             {
                 Debug.WriteLine(ex);
-                ActionMessage.Text = "Impossible de tout marquer comme lu.";
+                ActionMessage.Text = "Impossible de tout marquer comme lu : " + ex.GetBaseException().Message;
                 ActionMessage.Visibility = Visibility.Visible;
                 MarkAllButton.IsEnabled = true;
             }

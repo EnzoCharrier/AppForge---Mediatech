@@ -24,14 +24,11 @@ namespace MediaTech_AppForge.Views
             SectionHost.Content = ((RadioButton)sender).Name switch
             {
                 nameof(TabMedias) => new GestionMediasView(),
-                nameof(TabAuteurs) => Soon("Auteurs"),
-                nameof(TabEditeurs) => Soon("Éditeurs"),
-                nameof(TabGenres) => Soon("Genres"),
-                _ => Soon("Utilisateurs"),
+                nameof(TabAuteurs) => new GestionRefsView(RefKind.Auteur),
+                nameof(TabEditeurs) => new GestionRefsView(RefKind.Editeur),
+                nameof(TabGenres) => new GestionRefsView(RefKind.Genre),
+                _ => new GestionUsersView(),
             };
         }
-
-        private static PlaceholderView Soon(string title)
-            => new(title, "La gestion de cette section arrive à la prochaine étape.");
     }
 }

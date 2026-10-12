@@ -21,6 +21,7 @@ namespace MediaTech_AppForge.Views
 
         public string? SavedTitle { get; private set; }
         public bool Created { get; private set; }
+        public string? Warning { get; private set; }
 
         public MediaEditorWindow(int? id, MediaKind? kind)
         {
@@ -266,7 +267,8 @@ namespace MediaTech_AppForge.Views
             SaveButton.IsEnabled = false;
             try
             {
-                await AdminService.SaveMediaAsync(_id, model, NotifyCheck.IsChecked == true);
+                var result = await AdminService.SaveMediaAsync(_id, model, NotifyCheck.IsChecked == true);
+                Warning = result.Warning;
                 SavedTitle = model.Titre;
                 Created = _id is null;
                 DialogResult = true;

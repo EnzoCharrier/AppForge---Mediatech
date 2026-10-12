@@ -9,10 +9,11 @@ using MediaTech_AppForge.Models;
 
 namespace MediaTech_AppForge.Services
 {
-    public record PisteInput(string Titre, TimeSpan? Duree); // Crée une piste CD
-    public record LookupData(List<string> Editeurs, List<string> Auteurs, List<GenreInfo> Genres); // Regroupe les donnée necessaire pour les listes deroulante(form)
+    public record PisteInput(string Titre, TimeSpan? Duree);
+    public record LookupData(List<string> Editeurs, List<string> Auteurs, List<GenreInfo> Genres);
+    public record SaveResult(int Id, string? Warning);
 
-    // Donnée du formulaire permettant de créer ou modifier un média
+    /// <summary>Données saisies dans le formulaire média (création ou modification).</summary>
     public class MediaEditModel
     {
         public MediaKind Kind { get; set; }
@@ -32,51 +33,36 @@ namespace MediaTech_AppForge.Services
         public List<PisteInput> Pistes { get; set; } = new(); // CD
     }
 
-    // Permet a un administrateur de gérer les différents médias de l'application
+    /// <summary>Opérations d'administration. Chaque méthode vérifie que l'utilisateur courant est admin.</summary>
     public static class AdminService
     {
-        private static void RequireAdmin() // Vérifier si l'utilisateur est un utilisateur ou pas 
+        private static void RequireAdmin()
         {
             if (!Session.IsAdmin)
-                throw new UnauthorizedAccessException("Action réservée aux administrateurs."); // Crée une exception le user n'est pas un admin
+                throw new UnauthorizedAccessException("Action réservée aux administrateurs.");
         }
 
-        public static async Task<LookupData> GetLookupsAsync() // Recupère les données necessaire au formulaire
+        public static async Task<LookupData> GetLookupsAsync()
         {
             RequireAdmin();
-            await using var db = new MediaTechContext(); // connexion bdd
+            await using var db = new MediaTechContext();
 
-            // Recupère les editeurs, auteurs et genres et les trie
             var editeurs = await db.Editeurs.AsNoTracking().OrderBy(e => e.Nom).Select(e => e.Nom).ToListAsync();
             var auteurs = await db.Auteurs.AsNoTracking().OrderBy(a => a.Nom).Select(a => a.Nom).ToListAsync();
             var genres = await db.Genres.AsNoTracking()
                 .Select(g => new GenreInfo(g.Id, g.Libelle, g.IdGenreParent)).ToListAsync();
 
-            return new LookupData(editeurs, auteurs, genres); // Crée un objet qui regroupe ces info dans un seul objet
+            return new LookupData(editeurs, auteurs, genres);
         }
 
         // ---------------------------------------------------------------
         // Lecture pour modification
         // ---------------------------------------------------------------
-        /// 
-        /// 
-        /// 
-        /// 
-        /// 
-        /// 
-        /// 
-        /// A RELIRE POUR MIEUX COMPRENDRE
-        ///.
-        ///.
-        ///.
-        ///.
-        ///.
-        public static async Task<MediaEditModel?> GetMediaForEditAsync(int id, MediaKind kind) // Recupere toute les informations d'un média afin de remplir le formulaire 
+        public static async Task<MediaEditModel?> GetMediaForEditAsync(int id, MediaKind kind)
         {
             RequireAdmin();
             await using var db = new MediaTechContext();
 
-            // Recupere donnée selon l'id 
             var m = await db.Medias.AsNoTracking().Where(x => x.Id == id).Select(x => new
             {
                 x.Titre,
@@ -86,10 +72,8 @@ namespace MediaTech_AppForge.Services
                 Auteur = x.Auteur != null ? x.Auteur.Nom : null,
                 GenreIds = x.Genres.Select(g => g.Id).ToList(),
             }).FirstOrDefaultAsync();
+            if (m is null) return null;
 
-            if (m is null) return null; // si n'existe pas on retourne null 
-
-            // Création du modèle du formulaire
             var model = new MediaEditModel
             {
                 Kind = kind,
@@ -101,7 +85,6 @@ namespace MediaTech_AppForge.Services
                 GenreIds = m.GenreIds,
             };
 
-            // Recupere les donnée propre au type de média 
             switch (kind)
             {
                 case MediaKind.Livre:
@@ -136,19 +119,20 @@ namespace MediaTech_AppForge.Services
             return model;
         }
 
-        
-        // Création / modification : Media + sous-type + genres + pistes
-        public static async Task<int> SaveMediaAsync(int? id, MediaEditModel model, bool notify)
+        // ---------------------------------------------------------------
+        // Création / modification : Media + sous-type + genres + pistes en UNE transaction
+        // ---------------------------------------------------------------
+        public static async Task<SaveResult> SaveMediaAsync(int? id, MediaEditModel model, bool notify)
         {
             RequireAdmin();
             await using var db = new MediaTechContext();
-            await using var tx = await db.Database.BeginTransactionAsync(); // on commence une transaction(permet de realiser plusieurs modification en une seule opération)
+            await using var tx = await db.Database.BeginTransactionAsync();
 
-            bool creating = id is null; // permet de savoir si on crée ou modifie un media(si null c'est une création sinon une modification)
+            bool creating = id is null;
 
             // Éditeur / auteur : on réutilise l'existant (même nom) ou on le crée.
-            var editeurNom = model.Editeur.Trim(); // Supprime espace en trop
-            var editeur = await db.Editeurs.FirstOrDefaultAsync(e => e.Nom == editeurNom); // on cherche si l'éditeur existe déja 
+            var editeurNom = model.Editeur.Trim();
+            var editeur = await db.Editeurs.FirstOrDefaultAsync(e => e.Nom == editeurNom);
             if (editeur is null)
             {
                 editeur = new Editeur { Nom = editeurNom };
@@ -157,9 +141,9 @@ namespace MediaTech_AppForge.Services
 
             Auteur? auteur = null;
             var auteurNom = model.Auteur?.Trim();
-            if (!string.IsNullOrEmpty(auteurNom)) // si le nom existe on le reutilise au lieu d'en créer un nouveau
+            if (!string.IsNullOrEmpty(auteurNom))
             {
-                auteur = await db.Auteurs.FirstOrDefaultAsync(a => a.Nom == auteurNom); 
+                auteur = await db.Auteurs.FirstOrDefaultAsync(a => a.Nom == auteurNom);
                 if (auteur is null)
                 {
                     auteur = new Auteur { Nom = auteurNom };
@@ -168,8 +152,6 @@ namespace MediaTech_AppForge.Services
             }
 
             Media entity;
-
-            // Crée l'objet en fonction de son type(si kind = Livre alors new Livres)
             if (creating)
             {
                 entity = model.Kind switch
@@ -181,26 +163,25 @@ namespace MediaTech_AppForge.Services
                 };
                 db.Medias.Add(entity);
             }
-            else // Modifie un média existant si il existe sinon lève une exception
+            else
             {
                 entity = await db.Medias.Include(x => x.Genres).FirstOrDefaultAsync(x => x.Id == id)
                          ?? throw new InvalidOperationException("Ce média n'existe plus.");
             }
 
-            // met a jour les informations 
             entity.Titre = model.Titre.Trim();
             entity.DateSortie = model.DateSortie;
             entity.Stock = model.Stock;
             entity.Editeur = editeur;
             entity.Auteur = auteur;
 
-            // Remplace les ancienne associations avec les nouvelles 
+            // Genres (table Media_Genre)
             var genreIds = model.GenreIds.ToList();
             var wanted = await db.Genres.Where(g => genreIds.Contains(g.Id)).ToListAsync();
             entity.Genres.Clear();
             entity.Genres.AddRange(wanted);
 
-            
+            // Champs propres au sous-type
             switch (entity)
             {
                 case Livre l:
@@ -219,23 +200,29 @@ namespace MediaTech_AppForge.Services
                     // Les pistes sont remplacées en bloc.
                     if (!creating)
                         await db.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM Piste WHERE IdMedia = {id}");
-                    int numero = 1; // numérote les différentes pistes
+                    int numero = 1;
                     foreach (var p in model.Pistes)
                         c.Pistes.Add(new Piste { Titre = p.Titre, Duree = p.Duree, Numero = numero++ });
                     break;
             }
 
-            await db.SaveChangesAsync(); // enregistres dans la bdd 
-            await tx.CommitAsync(); // valide la transaction 
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
 
             // Nouveau média => notification GLOBALE (aucune ligne NotificationUtilisateur créée ici).
+            string? warning = null;
             if (creating && notify)
             {
                 try { await NotificationService.PublishNewMediaAsync(entity.Id, entity.Titre); }
-                catch (Exception ex) { Debug.WriteLine(ex); } // le média est déjà enregistré : on n'échoue pas pour ça
+                catch (Exception ex)
+                {
+                    // Le média est déjà enregistré : on n'échoue pas, mais on le dit à l'administrateur.
+                    Debug.WriteLine(ex);
+                    warning = "Le média est enregistré, mais la notification n'a pas pu être publiée : " + ex.GetBaseException().Message;
+                }
             }
 
-            return entity.Id;
+            return new SaveResult(entity.Id, warning);
         }
 
         // ---------------------------------------------------------------
