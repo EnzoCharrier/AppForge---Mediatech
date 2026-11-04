@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Windows;
 using MediaTech_AppForge.Services;
+using MediaTech_AppForge.ViewModels;
 
 namespace MediaTech_AppForge.Views
 {

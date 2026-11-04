@@ -8,35 +8,10 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MediaTech_AppForge.Data;
 using MediaTech_AppForge.Models;
+using MediaTech_AppForge.ViewModels;
 
 namespace MediaTech_AppForge.Services
 {
-    /// <summary>Une ligne de la page Notifications. IsRead notifie l'interface (mise à jour immédiate au clic).</summary>
-    public class NotificationRow : INotifyPropertyChanged
-    {
-        public int Id { get; set; }
-        public string Type { get; set; } = "";
-        public string Message { get; set; } = "";
-        public string Icon { get; set; } = "";
-        public string Footer { get; set; } = "";
-        public bool IsGlobal { get; set; }
-        public int? TargetMediaId { get; set; }
-        public MediaKind? Kind { get; set; }
-
-        private bool _isRead;
-        public bool IsRead
-        {
-            get => _isRead;
-            set
-            {
-                if (_isRead == value) return;
-                _isRead = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsRead)));
-            }
-        }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-    }
 
     public static class NotificationService
     {
@@ -48,21 +23,21 @@ namespace MediaTech_AppForge.Services
         public const int RappelAvantJours = 3;   // rappel envoyé à partir de J-3
         public const int GlobalesJours = 30;     // une notif globale reste visible 30 jours
 
-        private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR");
+        private static readonly CultureInfo CultureFrancaise = CultureInfo.GetCultureInfo("fr-FR");
 
         /// <summary>Levé quand des notifications ont changé (pastille de la sidebar à rafraîchir).</summary>
         public static event Action? Changed;
         public static void NotifyChanged() => Changed?.Invoke();
 
         // Visible pour l'utilisateur : une globale récente, OU une notif qui lui est adressée (ligne existante).
-        private static Expression<Func<Notification, bool>> Visible(int userId, DateTime since)
-            => n => (n.EstGlobale && n.DateEnvoi >= since)
-                    || n.Destinataires.Any(d => d.IdUtilisateur == userId);
+        private static Expression<Func<Notification, bool>> Visible(int userId, DateTime dateLimite)
+            => notification => (notification.EstGlobale && notification.DateEnvoi >= dateLimite)
+                               || notification.Destinataires.Any(destinataire => destinataire.IdUtilisateur == userId);
 
         // Non lue = aucune ligne "EstLue = true" pour cet utilisateur.
         // (globale jamais cliquée : pas de ligne du tout ; individuelle : ligne avec EstLue = false)
         private static Expression<Func<Notification, bool>> Unread(int userId)
-            => n => !n.Destinataires.Any(d => d.IdUtilisateur == userId && d.EstLue);
+            => notification => !notification.Destinataires.Any(destinataire => destinataire.IdUtilisateur == userId && destinataire.EstLue);
 
         // ---------------------------------------------------------------
         // LECTURE
@@ -70,9 +45,9 @@ namespace MediaTech_AppForge.Services
         public static async Task<int> CountUnreadAsync(int userId)
         {
             await using var db = new MediaTechContext();
-            var since = DateTime.Now.AddDays(-GlobalesJours);
+            DateTime dateLimite = DateTime.Now.AddDays(-GlobalesJours);
             return await db.Notifications
-                .Where(Visible(userId, since))
+                .Where(Visible(userId, dateLimite))
                 .Where(Unread(userId))
                 .CountAsync();
         }
@@ -80,38 +55,38 @@ namespace MediaTech_AppForge.Services
         public static async Task<List<NotificationRow>> GetForUserAsync(int userId)
         {
             await using var db = new MediaTechContext();
-            var since = DateTime.Now.AddDays(-GlobalesJours);
+            DateTime dateLimite = DateTime.Now.AddDays(-GlobalesJours);
 
-            var raw = await db.Notifications.AsNoTracking()
-                .Where(Visible(userId, since))
-                .OrderByDescending(n => n.DateEnvoi).ThenByDescending(n => n.Id)
-                .Select(n => new
+            var notificationsBrutes = await db.Notifications.AsNoTracking()
+                .Where(Visible(userId, dateLimite))
+                .OrderByDescending(notification => notification.DateEnvoi).ThenByDescending(notification => notification.Id)
+                .Select(notification => new
                 {
-                    n.Id, n.Type, n.Message, n.DateEnvoi, n.EstGlobale,
-                    MediaId = n.IdMedia ?? (n.Emprunt != null ? (int?)n.Emprunt.IdMedia : null),
-                    EstLue = n.Destinataires.Any(d => d.IdUtilisateur == userId && d.EstLue),
+                    notification.Id, notification.Type, notification.Message, notification.DateEnvoi, notification.EstGlobale,
+                    MediaId = notification.IdMedia ?? (notification.Emprunt != null ? (int?)notification.Emprunt.IdMedia : null),
+                    EstLue = notification.Destinataires.Any(destinataire => destinataire.IdUtilisateur == userId && destinataire.EstLue),
                 })
                 .Take(100)
                 .ToListAsync();
 
-            var kinds = await EmpruntService.KindsOfAsync(db,
-                raw.Where(r => r.MediaId != null).Select(r => r.MediaId!.Value).Distinct().ToList());
+            var typesParIdMedia = await EmpruntService.KindsOfAsync(db,
+                notificationsBrutes.Where(notification => notification.MediaId != null).Select(notification => notification.MediaId!.Value).Distinct().ToList());
 
-            return raw.Select(n =>
+            return notificationsBrutes.Select(notification =>
             {
-                MediaKind? kind = n.MediaId is int mid && kinds.TryGetValue(mid, out var k) ? k : null;
-                var label = TypeLabel(n.Type);
+                MediaKind? kind = notification.MediaId is int idMedia && typesParIdMedia.TryGetValue(idMedia, out var typeTrouve) ? typeTrouve : null;
+                string libelleType = TypeLabel(notification.Type);
                 return new NotificationRow
                 {
-                    Id = n.Id,
-                    Type = n.Type,
-                    Message = n.Message,
-                    Icon = TypeIcon(n.Type),
-                    Footer = $"{label} · {Relative(n.DateEnvoi)}",
-                    IsGlobal = n.EstGlobale,
-                    TargetMediaId = kind != null ? n.MediaId : null,
+                    Id = notification.Id,
+                    Type = notification.Type,
+                    Message = notification.Message,
+                    Icon = TypeIcon(notification.Type),
+                    Footer = $"{libelleType} · {Relative(notification.DateEnvoi)}",
+                    IsGlobal = notification.EstGlobale,
+                    TargetMediaId = kind != null ? notification.MediaId : null,
                     Kind = kind,
-                    IsRead = n.EstLue,
+                    IsRead = notification.EstLue,
                 };
             }).ToList();
         }
@@ -126,43 +101,47 @@ namespace MediaTech_AppForge.Services
 
         public static async Task MarkAllReadAsync(int userId)
         {
-            List<int> ids;
+            List<int> idsNotificationsNonLues;
             await using (var db = new MediaTechContext())
             {
-                var since = DateTime.Now.AddDays(-GlobalesJours);
-                ids = await db.Notifications
-                    .Where(Visible(userId, since)).Where(Unread(userId))
-                    .Select(n => n.Id).ToListAsync();
+                DateTime dateLimite = DateTime.Now.AddDays(-GlobalesJours);
+                idsNotificationsNonLues = await db.Notifications
+                    .Where(Visible(userId, dateLimite)).Where(Unread(userId))
+                    .Select(notification => notification.Id).ToListAsync();
             }
-            await MarkAsync(userId, ids);
+            await MarkAsync(userId, idsNotificationsNonLues);
         }
 
-        private static async Task MarkAsync(int userId, List<int> ids)
+        private static async Task MarkAsync(int userId, List<int> idsNotifications)
         {
-            if (ids.Count == 0) return;
+            if (idsNotifications.Count == 0)
+            {
+                return;
+            }
 
             await using var db = new MediaTechContext();
 
-            var notifs = await db.Notifications.AsNoTracking()
-                .Where(n => ids.Contains(n.Id))
-                .Select(n => new { n.Id, n.EstGlobale }).ToListAsync();
+            var notificationsConcernees = await db.Notifications.AsNoTracking()
+                .Where(notification => idsNotifications.Contains(notification.Id))
+                .Select(notification => new { notification.Id, notification.EstGlobale }).ToListAsync();
 
-            var set = db.Set<NotificationUtilisateur>();
-            var existing = await set
-                .Where(x => x.IdUtilisateur == userId && ids.Contains(x.IdNotification))
+            var tableDestinataires = db.Set<NotificationUtilisateur>();
+            var lignesExistantes = await tableDestinataires
+                .Where(ligne => ligne.IdUtilisateur == userId && idsNotifications.Contains(ligne.IdNotification))
                 .ToListAsync();
 
-            foreach (var n in notifs)
+            foreach (var notification in notificationsConcernees)
             {
-                var row = existing.FirstOrDefault(x => x.IdNotification == n.Id);
-                if (row != null)
+                var ligneExistante = lignesExistantes.FirstOrDefault(ligne => ligne.IdNotification == notification.Id);
+
+                if (ligneExistante != null)
                 {
-                    if (!row.EstLue) row.EstLue = true;
+                    ligneExistante.EstLue = true;
                 }
-                else if (n.EstGlobale)
+                // Le trigger SQL impose EstLue = TRUE pour une globale.
+                else if (notification.EstGlobale)
                 {
-                    // Le trigger SQL impose EstLue = TRUE pour une globale.
-                    set.Add(new NotificationUtilisateur { IdNotification = n.Id, IdUtilisateur = userId, EstLue = true });
+                    tableDestinataires.Add(new NotificationUtilisateur { IdNotification = notification.Id, IdUtilisateur = userId, EstLue = true });
                 }
                 // individuelle sans ligne pour cet utilisateur : elle ne lui est pas destinée, on ne crée rien.
             }
@@ -175,10 +154,13 @@ namespace MediaTech_AppForge.Services
             {
                 // Double clic / autre session : on ne tolère l'erreur que si l'état voulu est bien en base.
                 // Sinon (colonne inconnue, trigger, FK...) on remonte la vraie erreur à l'écran.
-                await using var check = new MediaTechContext();
-                int alreadyRead = await check.Set<NotificationUtilisateur>()
-                    .CountAsync(x => x.IdUtilisateur == userId && ids.Contains(x.IdNotification) && x.EstLue);
-                if (alreadyRead < notifs.Count) throw;
+                await using var dbVerification = new MediaTechContext();
+                int nbDejaLues = await dbVerification.Set<NotificationUtilisateur>()
+                    .CountAsync(ligne => ligne.IdUtilisateur == userId && idsNotifications.Contains(ligne.IdNotification) && ligne.EstLue);
+                if (nbDejaLues < notificationsConcernees.Count)
+                {
+                    throw;
+                }
             }
 
             Changed?.Invoke();
@@ -196,51 +178,59 @@ namespace MediaTech_AppForge.Services
         public static async Task GenerateRemindersAsync(int userId)
         {
             await using var db = new MediaTechContext();
-            var today = EmpruntService.Today();
-            var limit = today.AddDays(RappelAvantJours);
+            DateOnly aujourdHui = EmpruntService.Today();
+            DateOnly dateLimiteRappel = aujourdHui.AddDays(RappelAvantJours);
 
-            var loans = await db.Emprunts.AsNoTracking()
-                .Where(e => e.IdUtilisateur == userId && e.DateRetour == null && e.DateRetourPrevue <= limit)
-                .Select(e => new { e.Id, Titre = e.Media.Titre, e.DateRetourPrevue })
+            var empruntsARappeler = await db.Emprunts.AsNoTracking()
+                .Where(emprunt => emprunt.IdUtilisateur == userId && emprunt.DateRetour == null && emprunt.DateRetourPrevue <= dateLimiteRappel)
+                .Select(emprunt => new { emprunt.Id, Titre = emprunt.Media.Titre, emprunt.DateRetourPrevue })
                 .ToListAsync();
-            if (loans.Count == 0) return;
+            if (empruntsARappeler.Count == 0)
+            {
+                return;
+            }
 
-            var loanIds = loans.Select(l => l.Id).ToList();
-            var already = (await db.Notifications.AsNoTracking()
-                    .Where(n => n.IdEmprunt != null && loanIds.Contains(n.IdEmprunt.Value))
-                    .Select(n => new { n.IdEmprunt, n.Type }).ToListAsync())
-                .Select(x => (x.IdEmprunt!.Value, x.Type))
+            var idsEmprunts = empruntsARappeler.Select(emprunt => emprunt.Id).ToList();
+            var rappelsDejaCrees = (await db.Notifications.AsNoTracking()
+                    .Where(notification => notification.IdEmprunt != null && idsEmprunts.Contains(notification.IdEmprunt.Value))
+                    .Select(notification => new { notification.IdEmprunt, notification.Type }).ToListAsync())
+                .Select(rappel => (rappel.IdEmprunt!.Value, rappel.Type))
                 .ToHashSet();
 
-            int created = 0;
-            foreach (var l in loans)
+            int nbRappelsCrees = 0;
+            foreach (var emprunt in empruntsARappeler)
             {
-                bool late = l.DateRetourPrevue.DayNumber < today.DayNumber;
-                var type = late ? TypeRetard : TypeRappel;
-                if (already.Contains((l.Id, type))) continue;
+                bool enRetard = emprunt.DateRetourPrevue.DayNumber < aujourdHui.DayNumber;
+                string typeRappel = enRetard ? TypeRetard : TypeRappel;
+                if (rappelsDejaCrees.Contains((emprunt.Id, typeRappel)))
+                {
+                    continue;
+                }
 
-                var date = l.DateRetourPrevue.ToString("d MMMM yyyy", Fr);
-                var message = late
-                    ? $"« {l.Titre} » devait être rendu le {date}. Merci de le rapporter."
-                    : $"« {l.Titre} » est à rendre le {date}.";
+                string dateTexte = emprunt.DateRetourPrevue.ToString("d MMMM yyyy", CultureFrancaise);
+                string message = enRetard
+                    ? $"« {emprunt.Titre} » devait être rendu le {dateTexte}. Merci de le rapporter."
+                    : $"« {emprunt.Titre} » est à rendre le {dateTexte}.";
 
                 db.Notifications.Add(new Notification
                 {
-                    Type = type,
+                    Type = typeRappel,
                     Message = Truncate(message, 255),
                     DateEnvoi = DateTime.Now,
                     EstGlobale = false,
-                    IdEmprunt = l.Id,
+                    IdEmprunt = emprunt.Id,
                     Destinataires = { new NotificationUtilisateur { IdUtilisateur = userId, EstLue = false } },
                 });
-                created++;
+                nbRappelsCrees++;
             }
 
-            if (created > 0)
+            if (nbRappelsCrees == 0)
             {
-                await db.SaveChangesAsync();
-                Changed?.Invoke();
+                return;
             }
+
+            await db.SaveChangesAsync();
+            Changed?.Invoke();
         }
 
         /// <summary>
@@ -281,16 +271,28 @@ namespace MediaTech_AppForge.Services
             _ => "\U0001F514",              // 🔔
         };
 
-        private static string Relative(DateTime d)
+        private static string Relative(DateTime dateEnvoi)
         {
-            var span = DateTime.Now - d;
-            if (span.TotalMinutes < 1) return "à l'instant";
-            if (span.TotalMinutes < 60) return $"il y a {(int)span.TotalMinutes} min";
-            if (span.TotalHours < 24) return $"il y a {(int)span.TotalHours} h";
-            if (span.TotalDays < 7) return $"il y a {(int)span.TotalDays} j";
-            return d.ToString("d MMM yyyy", Fr);
+            TimeSpan tempsEcoule = DateTime.Now - dateEnvoi;
+            if (tempsEcoule.TotalMinutes < 1)
+            {
+                return "à l'instant";
+            }
+            if (tempsEcoule.TotalMinutes < 60)
+            {
+                return $"il y a {(int)tempsEcoule.TotalMinutes} min";
+            }
+            if (tempsEcoule.TotalHours < 24)
+            {
+                return $"il y a {(int)tempsEcoule.TotalHours} h";
+            }
+            if (tempsEcoule.TotalDays < 7)
+            {
+                return $"il y a {(int)tempsEcoule.TotalDays} j";
+            }
+            return dateEnvoi.ToString("d MMM yyyy", CultureFrancaise);
         }
 
-        private static string Truncate(string s, int max) => s.Length <= max ? s : s[..(max - 1)] + "…";
+        private static string Truncate(string texte, int longueurMax) => texte.Length <= longueurMax ? texte : texte[..(longueurMax - 1)] + "…";
     }
 }

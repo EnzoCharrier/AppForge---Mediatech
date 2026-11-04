@@ -1,5 +1,6 @@
 using System.Windows;
 
+
 namespace MediaTech_AppForge.Views
 {
     /// <summary>Confirmation au thème de l'application (le MessageBox système est blanc).</summary>

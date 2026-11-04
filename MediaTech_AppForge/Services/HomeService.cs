@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MediaTech_AppForge.Data;
+using MediaTech_AppForge.ViewModels;
 
 namespace MediaTech_AppForge.Services
 {
@@ -17,31 +18,31 @@ namespace MediaTech_AppForge.Services
         {
             await using var db = new MediaTechContext();
 
-            int total = await db.Medias.CountAsync();
+            int nbMediasTotal = await db.Medias.CountAsync();
 
             // Le schéma n'a pas de date d'ajout : "dernier ajouté" = identifiant le plus élevé.
-            var raw = await db.Medias.AsNoTracking()
-                .OrderByDescending(m => m.Id).Take(ShowcaseCount)
-                .Select(m => new
+            var derniersMediasBruts = await db.Medias.AsNoTracking()
+                .OrderByDescending(media => media.Id).Take(ShowcaseCount)
+                .Select(media => new
                 {
-                    m.Id, m.Titre, m.Stock,
-                    Auteur = m.Auteur != null ? m.Auteur.Nom : null,
-                    Editeur = m.Editeur.Nom,
+                    media.Id, media.Titre, media.Stock,
+                    Auteur = media.Auteur != null ? media.Auteur.Nom : null,
+                    Editeur = media.Editeur.Nom,
                 }).ToListAsync();
 
-            var kinds = await EmpruntService.KindsOfAsync(db, raw.Select(r => r.Id).ToList());
+            var typesParIdMedia = await EmpruntService.KindsOfAsync(db, derniersMediasBruts.Select(media => media.Id).ToList());
 
-            var latest = raw.Select(r => new MediaRow
+            var derniersMedias = derniersMediasBruts.Select(media => new MediaRow
             {
-                Id = r.Id,
-                Kind = kinds.TryGetValue(r.Id, out var k) ? k : MediaKind.Livre,
-                Titre = r.Titre,
-                Auteur = r.Auteur ?? "",
-                Editeur = r.Editeur,
-                Stock = r.Stock,
+                Id = media.Id,
+                Kind = typesParIdMedia.TryGetValue(media.Id, out var typeTrouve) ? typeTrouve : MediaKind.Livre,
+                Titre = media.Titre,
+                Auteur = media.Auteur ?? "",
+                Editeur = media.Editeur,
+                Stock = media.Stock,
             }).ToList();
 
-            return new Showcase(total, latest);
+            return new Showcase(nbMediasTotal, derniersMedias);
         }
     }
 }

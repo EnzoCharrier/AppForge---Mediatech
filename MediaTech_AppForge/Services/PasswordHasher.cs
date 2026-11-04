@@ -15,30 +15,34 @@ namespace MediaTech_AppForge.Services
 
         public static string Hash(string password)
         {
-            byte[] salt = RandomNumberGenerator.GetBytes(16);
-            byte[] hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, Iterations, HashAlgorithmName.SHA256, 32);
-            return $"{Prefix}{Iterations}${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
+            byte[] sel = RandomNumberGenerator.GetBytes(16);
+            byte[] hash = Rfc2898DeriveBytes.Pbkdf2(password, sel, Iterations, HashAlgorithmName.SHA256, 32);
+            return $"{Prefix}{Iterations}${Convert.ToBase64String(sel)}${Convert.ToBase64String(hash)}";
         }
 
         public static bool Verify(string password, string stored, out bool needsUpgrade)
         {
-            if (!stored.StartsWith(Prefix, StringComparison.Ordinal))
+            bool estAncienMotDePasseEnClair = !stored.StartsWith(Prefix, StringComparison.Ordinal);
+            needsUpgrade = estAncienMotDePasseEnClair;
+
+            // Ancien mot de passe en clair (données de départ) : comparaison, puis migration.
+            if (estAncienMotDePasseEnClair)
             {
-                // Ancien mot de passe en clair (données de départ) : comparaison, puis migration.
-                needsUpgrade = true;
-                return CryptographicOperations.FixedTimeEquals(
-                    Encoding.UTF8.GetBytes(password), Encoding.UTF8.GetBytes(stored));
+                return CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(password), Encoding.UTF8.GetBytes(stored));
             }
 
-            needsUpgrade = false;
             try
             {
-                string[] parts = stored.Split('$');
-                if (parts.Length != 4 || !int.TryParse(parts[1], out int iterations)) return false;
-                byte[] salt = Convert.FromBase64String(parts[2]);
-                byte[] expected = Convert.FromBase64String(parts[3]);
-                byte[] actual = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, expected.Length);
-                return CryptographicOperations.FixedTimeEquals(actual, expected);
+                string[] morceaux = stored.Split('$'); // pbkdf2 | iterations | sel | hash
+                if (morceaux.Length != 4 || !int.TryParse(morceaux[1], out int nbIterations))
+                {
+                    return false;
+                }
+
+                byte[] sel = Convert.FromBase64String(morceaux[2]);
+                byte[] hashAttendu = Convert.FromBase64String(morceaux[3]);
+                byte[] hashCalcule = Rfc2898DeriveBytes.Pbkdf2(password, sel, nbIterations, HashAlgorithmName.SHA256, hashAttendu.Length);
+                return CryptographicOperations.FixedTimeEquals(hashCalcule, hashAttendu);
             }
             catch (FormatException)
             {

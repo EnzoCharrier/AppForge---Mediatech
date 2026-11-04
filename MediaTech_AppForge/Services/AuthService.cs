@@ -11,24 +11,30 @@ namespace MediaTech_AppForge.Services
         {
             await using MediaTechContext db = new MediaTechContext();
 
-            Utilisateur user = await db.Utilisateurs.FirstOrDefaultAsync(u => u.Username == username);
+            Utilisateur? utilisateur = await db.Utilisateurs.FirstOrDefaultAsync(utilisateurTrouve => utilisateurTrouve.Username == username);
 
             // Même message si l'utilisateur n'existe pas ou si le mot de passe est faux.
-            if (user is null || !PasswordHasher.Verify(password, user.Password, out bool needsUpgrade))
-                return (null, "Identifiant ou mot de passe incorrect.");
-
-            if (user.Etat == EtatUtilisateur.Suspendu)
-                return (null, "Votre compte est suspendu. Contactez la médiathèque.");
-            if (user.Etat == EtatUtilisateur.Banni)
-                return (null, "Votre compte a été banni.");
-
-            if (needsUpgrade)
+            if (utilisateur is null || !PasswordHasher.Verify(password, utilisateur.Password, out bool motDePasseAMigrer))
             {
-                user.Password = PasswordHasher.Hash(password);
+                return (null, "Identifiant ou mot de passe incorrect.");
+            }
+
+            if (utilisateur.Etat == EtatUtilisateur.Suspendu)
+            {
+                return (null, "Votre compte est suspendu. Contactez la médiathèque.");
+            }
+            if (utilisateur.Etat == EtatUtilisateur.Banni)
+            {
+                return (null, "Votre compte a été banni.");
+            }
+
+            if (motDePasseAMigrer)
+            {
+                utilisateur.Password = PasswordHasher.Hash(password);
                 await db.SaveChangesAsync();
             }
 
-            return (user, null);
+            return (utilisateur, null);
         }
     }
 }
