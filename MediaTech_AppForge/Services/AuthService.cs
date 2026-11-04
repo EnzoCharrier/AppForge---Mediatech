@@ -9,12 +9,12 @@ namespace MediaTech_AppForge.Services
     {
         public static async Task<(Utilisateur? User, string? Error)> LoginAsync(string username, string password)
         {
-            await using var db = new MediaTechContext();
+            await using MediaTechContext db = new MediaTechContext();
 
-            var user = await db.Utilisateurs.FirstOrDefaultAsync(u => u.Username == username);
+            Utilisateur user = await db.Utilisateurs.FirstOrDefaultAsync(u => u.Username == username);
 
             // Même message si l'utilisateur n'existe pas ou si le mot de passe est faux.
-            if (user is null || !PasswordHasher.Verify(password, user.Password, out var needsUpgrade))
+            if (user is null || !PasswordHasher.Verify(password, user.Password, out bool needsUpgrade))
                 return (null, "Identifiant ou mot de passe incorrect.");
 
             if (user.Etat == EtatUtilisateur.Suspendu)

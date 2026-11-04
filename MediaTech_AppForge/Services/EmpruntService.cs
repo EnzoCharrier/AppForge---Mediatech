@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MediaTech_AppForge.Data;
 using MediaTech_AppForge.Models;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace MediaTech_AppForge.Services
 {
@@ -36,7 +37,7 @@ namespace MediaTech_AppForge.Services
 
         private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR"); // indique que les dates doivent être affichés dans le format francais
         public static DateOnly Today() => DateOnly.FromDateTime(DateTime.Today);
-        private static string Fmt(DateOnly d, string f = "d MMMM yyyy") => d.ToString(f, Fr); // formate date en francais(6/10/2026 => 6 Octobre 2026)
+        private static string Fmt(DateOnly date, string f = "d MMMM yyyy") => date.ToString(f, Fr); // formate date en francais(6/10/2026 => 6 Octobre 2026)
 
         private static BorrowResult Fail(string error) => new(false, error, null);
 
@@ -44,18 +45,18 @@ namespace MediaTech_AppForge.Services
         // EMPRUNTER : contrôles + décrément du stock + création, en une transaction
         public static async Task<BorrowResult> BorrowAsync(int userId, int mediaId, bool physique)
         {
-            await using var db = new MediaTechContext(); // connexion bdd
-            await using var tx = await db.Database.BeginTransactionAsync(); // ouvre transaction
+            await using MediaTechContext db = new MediaTechContext(); // connexion bdd
+            await using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync(); // ouvre transaction (verification)
 
             
-            var user = await db.Utilisateurs.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId); // cherche user dans la bdd
+            Utilisateur user = await db.Utilisateurs.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId); // cherche user dans la bdd
             if (user is null || user.Etat != EtatUtilisateur.Actif) // verif si user existe et que son compte est actif
                 return Fail("Votre compte ne permet pas d'emprunter actuellement.");
 
             if (!await db.Medias.AnyAsync(m => m.Id == mediaId)) // verif si media existe
                 return Fail("Ce média n'existe plus.");
 
-            var actifs = await db.Emprunts                     
+            List<int> actifs = await db.Emprunts                     
                 .Where(e => e.IdUtilisateur == userId && e.DateRetour == null)
                 .Select(e => e.IdMedia).ToListAsync();
 
@@ -73,8 +74,8 @@ namespace MediaTech_AppForge.Services
                 if (n == 0) return Fail("Plus aucun exemplaire physique n'est disponible.");
             }
 
-            var today = Today();
-            var due = today.AddDays(DureeJours); // date de retour
+            DateOnly today = Today();
+            DateOnly due = today.AddDays(DureeJours); // date de retour
 
             //crée un emprunt 
             db.Emprunts.Add(new Emprunt
@@ -88,48 +89,36 @@ namespace MediaTech_AppForge.Services
 
             //enregistre et valide la transaction
             await db.SaveChangesAsync();
-            await tx.CommitAsync();
+            await transaction.CommitAsync();
 
             return new BorrowResult(true, null, due);
         }
 
         
         // RENDRE : date de retour + réintégration du stock si physique
-        /// 
-        /// 
-        /// 
-        /// 
-        /// 
-        /// 
-        /// 
-        /// A REFAIRE
-        ///.
-        ///.
-        ///.
-        ///.
-        ///.
+        
         public static async Task<(bool Success, string? Error)> ReturnAsync(int userId, int empruntId) // Permet de rendre un emprunt
         {
-            await using var db = new MediaTechContext();
-            await using var tx = await db.Database.BeginTransactionAsync();
+            await using MediaTechContext db = new MediaTechContext();
+            await using var transaction = await db.Database.BeginTransactionAsync();
 
-            var e = await db.Emprunts.FirstOrDefaultAsync(x => x.Id == empruntId && x.IdUtilisateur == userId); // recherche un emprunt 
-            if (e is null) return (false, "Emprunt introuvable."); // verifie si l'emprunt n'existe pas
-            if (e.DateRetour != null) return (false, "Cet emprunt a déjà été rendu."); // verifie si il a déja été rendu 
+            Emprunt emprunt = await db.Emprunts.FirstOrDefaultAsync(x => x.Id == empruntId && x.IdUtilisateur == userId); // recherche un emprunt 
+            if (emprunt is null) return (false, "Emprunt introuvable."); // verifie si l'emprunt n'existe pas
+            if (emprunt.DateRetour != null) return (false, "Cet emprunt a déjà été rendu."); // verifie si il a déja été rendu 
 
-            e.DateRetour = Today(); // enregistre la date de retour
+            emprunt.DateRetour = Today(); // enregistre la date de retour
 
             // Les rappels liés à cet emprunt (échéance, retard) sont supprimé.
-            var rappels = await db.Notifications.Where(n => n.IdEmprunt == empruntId).ToListAsync();
+            List<Notification> rappels = await db.Notifications.Where(n => n.IdEmprunt == empruntId).ToListAsync();
             db.Notifications.RemoveRange(rappels);
 
             await db.SaveChangesAsync();
 
-            if (e.EstPhysique) // verifie si le media était physique
+            if (emprunt.EstPhysique) // verifie si le media était physique
                 await db.Database.ExecuteSqlInterpolatedAsync(
-                    $"UPDATE Media SET Stock = Stock + 1 WHERE Id = {e.IdMedia}"); // si oui on update le stock
+                    $"UPDATE Media SET Stock = Stock + 1 WHERE Id = {emprunt.IdMedia}"); // si oui on update le stock
 
-            await tx.CommitAsync(); // valide transaction
+            await transaction.CommitAsync(); // valide transaction
             NotificationService.NotifyChanged(); // notifie l'application qu'il y a eu une modification
             return (true, null);
         }
@@ -138,7 +127,7 @@ namespace MediaTech_AppForge.Services
        
         public static async Task<ActiveLoan?> GetActiveLoanAsync(int userId, int mediaId)
         {
-            await using var db = new MediaTechContext();
+            await using MediaTechContext db = new MediaTechContext();
             var e = await db.Emprunts.AsNoTracking()
                 .Where(x => x.IdUtilisateur == userId && x.IdMedia == mediaId && x.DateRetour == null)
                 .Select(x => new { x.Id, x.DateRetourPrevue, x.EstPhysique })
@@ -161,8 +150,8 @@ namespace MediaTech_AppForge.Services
                     e.EstPhysique, e.DateEmprunt, e.DateRetourPrevue, e.DateRetour,
                 }).ToListAsync();
 
-            var kinds = await KindsOfAsync(db, raw.Select(r => r.IdMedia).Distinct().ToList()); // Recherche du type de chaque media
-            var today = Today();
+            Dictionary<int, MediaKind> kinds = await KindsOfAsync(db, raw.Select(r => r.IdMedia).Distinct().ToList()); // Recherche du type de chaque media
+            DateOnly today = Today();
 
             return raw.Select(e =>
             {
@@ -177,7 +166,7 @@ namespace MediaTech_AppForge.Services
                 else if (days == 1) due = "À rendre demain";
                 else due = $"À rendre le {Fmt(e.DateRetourPrevue)} (dans {days} jours)";
 
-                var kind = kinds.TryGetValue(e.IdMedia, out var k) ? k : MediaKind.Livre; // trouver type du media(livre par defaut)
+                MediaKind kind = kinds.TryGetValue(e.IdMedia, out var k) ? k : MediaKind.Livre; // trouver type du media(livre par defaut)
 
                 return new EmpruntRow // crée l'objet emprunt
                 {
@@ -198,13 +187,13 @@ namespace MediaTech_AppForge.Services
         // Le schéma n'a pas de colonne "type" : on déduit le sous-type par la table.
         public static async Task<Dictionary<int, MediaKind>> KindsOfAsync(MediaTechContext db, List<int> ids)
         {
-            var map = new Dictionary<int, MediaKind>();
+            Dictionary<int, MediaKind> map = new Dictionary<int, MediaKind>();
             if (ids.Count == 0) return map;
 
-            foreach (var id in await db.Livres.Where(x => ids.Contains(x.Id)).Select(x => x.Id).ToListAsync()) map[id] = MediaKind.Livre;
-            foreach (var id in await db.Magazines.Where(x => ids.Contains(x.Id)).Select(x => x.Id).ToListAsync()) map[id] = MediaKind.Magazine;
-            foreach (var id in await db.DVDs.Where(x => ids.Contains(x.Id)).Select(x => x.Id).ToListAsync()) map[id] = MediaKind.DVD;
-            foreach (var id in await db.CDs.Where(x => ids.Contains(x.Id)).Select(x => x.Id).ToListAsync()) map[id] = MediaKind.CD;
+            foreach (int id in await db.Livres.Where(x => ids.Contains(x.Id)).Select(x => x.Id).ToListAsync()) map[id] = MediaKind.Livre;
+            foreach (int id in await db.Magazines.Where(x => ids.Contains(x.Id)).Select(x => x.Id).ToListAsync()) map[id] = MediaKind.Magazine;
+            foreach (int id in await db.DVDs.Where(x => ids.Contains(x.Id)).Select(x => x.Id).ToListAsync()) map[id] = MediaKind.DVD;
+            foreach (int id in await db.CDs.Where(x => ids.Contains(x.Id)).Select(x => x.Id).ToListAsync()) map[id] = MediaKind.CD;
             return map;
         }
     }

@@ -2,4 +2,5 @@
 .vs/
 bin/
 obj/
+*.zip
 "@ | Out-File -Encoding utf8 .gitignore

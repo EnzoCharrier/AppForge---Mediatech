@@ -1,9 +1,5 @@
-using System;
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Threading;
 using MediaTech_AppForge.Services;
 using MediaTech_AppForge.Views;
 
@@ -12,32 +8,21 @@ namespace MediaTech_AppForge
     public partial class MainWindow : Window
     {
         private RadioButton? _current;
-        private readonly DispatcherTimer _notifTimer = new() { Interval = TimeSpan.FromSeconds(60) };
 
         public MainWindow()
         {
             InitializeComponent();
 
             Navigator.Handler = page => MainContent.Content = page;
-            Navigator.SectionHandler = GoToSection;
             Session.Changed += RefreshSession;
-            NotificationService.Changed += OnNotificationsChanged;
-
-            // Les notifications globales publiées ailleurs (admin) arrivent via ce rafraîchissement périodique.
-            _notifTimer.Tick += (_, _) => RefreshBadge(generate: false);
-            _notifTimer.Start();
-
             Closed += (_, _) =>
             {
-                _notifTimer.Stop();
                 Navigator.Handler = null;
-                Navigator.SectionHandler = null;
                 Session.Changed -= RefreshSession;
-                NotificationService.Changed -= OnNotificationsChanged;
             };
 
             RefreshSession();
-            SelectNav(NavAccueil);
+            SelectNav(NavCatalogue);
         }
 
         // Click (et non Checked) : recliquer sur "Catalogue" depuis une liste ou une fiche revient à l'accueil du catalogue.
@@ -60,9 +45,9 @@ namespace MediaTech_AppForge
                 nameof(NavEmprunts) when guest => Locked("Mes emprunts"),
                 nameof(NavNotifications) when guest => Locked("Notifications"),
                 nameof(NavEmprunts) => new MesEmpruntsView(),
-                nameof(NavNotifications) => new NotificationsView(),
-                nameof(NavGestion) => new GestionView(),
-                _ => new AccueilView(),
+                nameof(NavNotifications) => new PlaceholderView("Notifications", "Bientôt disponible."),
+                nameof(NavGestion) => new PlaceholderView("Gestion des contenus", "Bientôt disponible."),
+                _ => new PlaceholderView("Accueil", "Bientôt disponible."),
             };
         }
 
@@ -88,81 +73,13 @@ namespace MediaTech_AppForge
                 AvatarInitial.Text = name.Length > 0 ? name[..1].ToUpperInvariant() : "?";
             }
 
-            // À la connexion : génère les rappels de retour puis met à jour la pastille.
-            RefreshBadge(generate: logged);
-
             if (_current == null) return; // premier appel, avant la navigation initiale
 
             if (_current == NavGestion && !Session.IsAdmin)
                 SelectNav(NavCatalogue);
-            else if (_current == NavAccueil || _current == NavEmprunts || _current == NavNotifications || _current == NavGestion)
+            else if (_current == NavEmprunts || _current == NavNotifications || _current == NavGestion)
                 ShowPage(_current); // pages dépendantes de la session : on les réévalue
-            // Catalogue : on ne touche pas à la page affichée (fiche ouverte, recherche en cours...).
-        }
-
-        private void OnNotificationsChanged() => RefreshBadge(generate: false);
-
-        private async void RefreshBadge(bool generate)
-        {
-            if (Session.CurrentUser is not { } user)
-            {
-                SetNotificationBadge(0);
-                return;
-            }
-
-            try
-            {
-                if (generate) await NotificationService.GenerateRemindersAsync(user.Id);
-                int unread = await NotificationService.CountUnreadAsync(user.Id);
-
-                // L'utilisateur a pu se déconnecter pendant la requête.
-                if (Session.CurrentUser?.Id == user.Id) SetNotificationBadge(unread);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex);
-            }
-        }
-
-        private void SetNotificationBadge(int unread)
-        {
-            if (unread <= 0)
-            {
-                NavNotifications.Content = "Notifications";
-                return;
-            }
-
-            var panel = new StackPanel { Orientation = Orientation.Horizontal };
-            panel.Children.Add(new TextBlock { Text = "Notifications", VerticalAlignment = VerticalAlignment.Center });
-            panel.Children.Add(new Border
-            {
-                Background = (Brush)FindResource("Accent"),
-                CornerRadius = new CornerRadius(9),
-                Padding = new Thickness(6, 1, 6, 1),
-                Margin = new Thickness(8, 0, 0, 0),
-                Child = new TextBlock
-                {
-                    Text = unread > 99 ? "99+" : unread.ToString(),
-                    Foreground = Brushes.White,
-                    FontSize = 11,
-                    FontWeight = FontWeights.SemiBold,
-                },
-            });
-            NavNotifications.Content = panel;
-        }
-
-        // Appelé par les pages (ex. "Voir tout" sur l'accueil) : change de section ET met la sidebar à jour.
-        private void GoToSection(NavTarget target)
-        {
-            var nav = target switch
-            {
-                NavTarget.Accueil => NavAccueil,
-                NavTarget.Catalogue => NavCatalogue,
-                NavTarget.Emprunts => NavEmprunts,
-                NavTarget.Notifications => NavNotifications,
-                _ => NavGestion,
-            };
-            if (nav.Visibility == Visibility.Visible) SelectNav(nav);
+            // Catalogue / Accueil : on ne touche pas à la page affichée (fiche ouverte, recherche en cours...).
         }
 
         private void Login_Click(object sender, RoutedEventArgs e)
