@@ -9,7 +9,7 @@ namespace MediaTech_AppForge.ViewModels
     {
         public MediaKind Kind { get; set; }
         public string Titre { get; set; } = "";
-        public DateOnly? DateSortie { get; set; }
+        public DateOnly DateSortie { get; set; }
         public int Stock { get; set; }
         public string Editeur { get; set; } = "";
         public string? Auteur { get; set; }

@@ -33,13 +33,31 @@ namespace MediaTech_AppForge.Services
             switch (kind)
             {
                 case RefKind.Auteur:
-                    var auteurs = await db.Auteurs.AsNoTracking().OrderBy(auteur => auteur.Nom)
-                        .Select(auteur => new { auteur.Id, auteur.Nom, NbMedias = auteur.Medias.Count() }).ToListAsync();
-                    return auteurs.Select(auteur => new RefRow { Id = auteur.Id, Nom = auteur.Nom, Usage = auteur.NbMedias }).ToList();
+                    var auteurs = await db.Auteurs.AsNoTracking().OrderBy(auteur => auteur.Nom).Select(auteur =>
+                        new
+                        {
+                            auteur.Id,
+                            auteur.Nom,
+                            NbMedias = auteur.Medias.Count()
+                        }).ToListAsync();
+
+
+
+                    return auteurs.Select(auteur => 
+                    new RefRow { 
+                        Id = auteur.Id,
+                        Nom = auteur.Nom,
+                        Usage = auteur.NbMedias }).ToList();
 
                 case RefKind.Editeur:
-                    var editeurs = await db.Editeurs.AsNoTracking().OrderBy(editeur => editeur.Nom)
-                        .Select(editeur => new { editeur.Id, editeur.Nom, NbMedias = editeur.Medias.Count() }).ToListAsync();
+                    var editeurs = await db.Editeurs.AsNoTracking().OrderBy(editeur => editeur.Nom).Select(editeur =>
+                    new
+                    {
+                        editeur.Id,
+                        editeur.Nom,
+                        NbMedias = editeur.Medias.Count()
+                    }).ToListAsync();
+
                     return editeurs.Select(editeur => new RefRow { Id = editeur.Id, Nom = editeur.Nom, Usage = editeur.NbMedias }).ToList();
 
                 default:
@@ -121,8 +139,8 @@ namespace MediaTech_AppForge.Services
                         return (false, "Un genre porte déjà ce libellé.");
                     }
 
-                    int? idParent = null;
-                    string? nomParent = parentNom?.Trim();
+                    int idParent = 0;
+                    string nomParent = parentNom?.Trim();
                     if (!string.IsNullOrEmpty(nomParent))
                     {
                         var genreParent = await db.Genres.AsNoTracking().FirstOrDefaultAsync(genre => genre.Libelle == nomParent);

@@ -12,7 +12,7 @@ namespace MediaTech_AppForge.Models
     {
         public int Id { get; set; }
         public string Titre { get; set; } = null!;
-        public DateOnly? DateSortie { get; set; }
+        public DateOnly DateSortie { get; set; }
         public int Stock { get; set; }
     
         public int IdEditeur { get; set; }
