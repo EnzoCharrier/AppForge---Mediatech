@@ -230,6 +230,55 @@ INSERT INTO `Emprunt` VALUES
 /*!40000 ALTER TABLE `Emprunt` ENABLE KEYS */;
 UNLOCK TABLES;
 commit;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_uca1400_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`adminAppforge`@`%`*/ /*!50003 TRIGGER trg_emprunt_check_regles
+BEFORE INSERT ON Emprunt
+FOR EACH ROW
+BEGIN
+    DECLARE v_etat VARCHAR(20);
+    DECLARE v_nb INT;
+
+    -- Vérifier que l'utilisateur est actif
+    SELECT Etat INTO v_etat
+    FROM Utilisateur
+    WHERE Id = NEW.IdUtilisateur;
+
+    IF v_etat <> 'Actif' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Ce compte ne peut pas emprunter';
+    END IF;
+
+    -- Vérifier les dates
+    IF NEW.DateRetourPrevue < NEW.DateEmprunt THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'La date de retour prevue est avant la date emprunt';
+    END IF;
+
+    -- Vérifier qu'il n'y a pas déjà un emprunt en cours pour ce média
+    SELECT COUNT(*) INTO v_nb
+    FROM Emprunt
+    WHERE IdUtilisateur = NEW.IdUtilisateur
+      AND IdMedia = NEW.IdMedia
+      AND DateRetour IS NULL;
+
+    IF v_nb > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Emprunt deja en cours pour ce media';
+    END IF;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 
 --
 -- Table structure for table `Genre`
@@ -635,6 +684,37 @@ INSERT INTO `Utilisateur` VALUES
 /*!40000 ALTER TABLE `Utilisateur` ENABLE KEYS */;
 UNLOCK TABLES;
 commit;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_uca1400_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`adminAppforge`@`%`*/ /*!50003 TRIGGER trg_utilisateur_check_suppression
+BEFORE DELETE ON Utilisateur
+FOR EACH ROW
+BEGIN
+    DECLARE v_nb INT;
+
+    -- Compter les emprunts non rendus
+    SELECT COUNT(*) INTO v_nb
+    FROM Emprunt
+    WHERE IdUtilisateur = OLD.Id
+      AND DateRetour IS NULL;
+
+    IF v_nb > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Suppression impossible : emprunts en cours';
+    END IF;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -645,4 +725,4 @@ commit;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-11-10 14:54:21
+-- Dump completed on 2026-11-10 15:11:02
