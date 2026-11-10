@@ -1,0 +1,29 @@
+<UserControl x:Class="MediaTech_AppForge.Views.LogoMark"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Logo Média-Tech : un livre ouvert (le média) surmonté d'ondes (le numérique).
+         Dessiné sur une grille 64x64 ; la taille réelle se règle avec Width/Height. -->
+    <Viewbox Stretch="Uniform">
+        <Canvas Width="64" Height="64">
+            <Rectangle Width="64" Height="64" RadiusX="16" RadiusY="16">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#FFA78BFA" Offset="0"/>
+                        <GradientStop Color="#FF6D28D9" Offset="1"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+
+            <!-- ondes -->
+            <Path Data="M21.3,16 A14,14 0 0 1 42.7,16" Stroke="#80FFFFFF" StrokeThickness="2.6"
+                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+            <Path Data="M25.9,19.9 A8,8 0 0 1 38.1,19.9" Stroke="#D9FFFFFF" StrokeThickness="2.6"
+                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+            <Ellipse Canvas.Left="29.8" Canvas.Top="22.8" Width="4.4" Height="4.4" Fill="White"/>
+
+            <!-- livre ouvert -->
+            <Path Data="M31,31 C25,27 17,27 11,29 L11,50 C17,48 25,48 31,52 Z" Fill="White"/>
+            <Path Data="M33,31 C39,27 47,27 53,29 L53,50 C47,48 39,48 33,52 Z" Fill="#D1FFFFFF"/>
+        </Canvas>
+    </Viewbox>
+</UserControl>

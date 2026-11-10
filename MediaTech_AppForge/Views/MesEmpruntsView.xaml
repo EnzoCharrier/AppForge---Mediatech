@@ -1,0 +1,82 @@
+<UserControl x:Class="MediaTech_AppForge.Views.MesEmpruntsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel MaxWidth="900" Margin="32,24">
+
+            <TextBlock FontSize="13">
+                <Run Text="Média-Tech" Foreground="{StaticResource TextMuted}"/>
+                <Run Text=" / " Foreground="{StaticResource TextMuted}"/>
+                <Run Text="Mes emprunts" Foreground="{StaticResource Accent}" FontWeight="SemiBold"/>
+            </TextBlock>
+
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,20">
+                <TextBlock Text="Mes emprunts" FontSize="26" FontWeight="Bold" Foreground="{StaticResource TextPrimary}"/>
+                <Border Style="{StaticResource CountBadge}" Margin="14,0,0,0" VerticalAlignment="Center">
+                    <TextBlock x:Name="CountText" Foreground="{StaticResource TextSecondary}" FontSize="12"/>
+                </Border>
+            </StackPanel>
+
+            <TextBlock x:Name="StatusText" Text="Chargement…" Foreground="{StaticResource TextMuted}" FontSize="14"/>
+            <TextBlock x:Name="ActionMessage" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,12" Visibility="Collapsed"/>
+
+            <TextBlock Text="En cours" Foreground="{StaticResource TextPrimary}" FontSize="17" FontWeight="SemiBold" Margin="0,4,0,12"/>
+            <TextBlock x:Name="ActiveEmpty" Text="Aucun emprunt en cours. Parcourez le catalogue pour en faire un."
+                       Foreground="{StaticResource TextMuted}" FontSize="14" Visibility="Collapsed"/>
+
+            <ItemsControl x:Name="ActiveList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource ListCard}" MouseLeftButtonUp="Row_Click">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Titre}" FontSize="16" FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextPrimary}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding Subtitle}" FontSize="13" Foreground="{StaticResource TextSecondary}"
+                                               Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding DueText}" FontSize="13" Margin="0,6,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{StaticResource Accent}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsLate}" Value="True">
+                                                        <Setter Property="Foreground" Value="{StaticResource Danger}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="Rendre" Style="{StaticResource GhostButton}"
+                                        VerticalAlignment="Center" Margin="16,0,0,0" Click="Return_Click"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <StackPanel x:Name="HistoryPanel" Visibility="Collapsed">
+                <TextBlock Text="Historique" Foreground="{StaticResource TextPrimary}" FontSize="17" FontWeight="SemiBold" Margin="0,24,0,12"/>
+                <ItemsControl x:Name="HistoryList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource ListCard}" MouseLeftButtonUp="Row_Click">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Titre}" FontSize="15" FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextSecondary}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding Subtitle}" FontSize="12" Foreground="{StaticResource TextMuted}"
+                                               Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding DueText}" FontSize="12" Foreground="{StaticResource TextMuted}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
